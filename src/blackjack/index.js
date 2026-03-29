@@ -1,4 +1,4 @@
-import { crearDeck } from "./usecases/crear-deck.js";
+import { crearDeck, pedirCarta, valorCarta, mostrarMensaje, insertarCarta } from "./usecases";
 
 const tipos = ["C", "D", "H", "S"],
   especiales = ["A", "J", "Q", "K"];
@@ -11,33 +11,6 @@ const btnDetener = document.querySelector("#detener");
 const btnNuevo = document.querySelector("#nuevo-juego");
 const puntajesJugadorHTML = document.querySelectorAll("small");
 const divCartasJugadores = document.querySelectorAll(".div-cartas");
-
-const pedirCarta = (deck) => {
-  if (deck.length === 0) {
-    throw "No hay cartas en el deck";
-  }
-  return deck.pop();
-};
-
-const valorCarta = (carta) => {
-  const valor = carta.substring(0, carta.length - 1);
-  return isNaN(valor) ? (valor === "A" ? 11 : 10) : valor * 1;
-};
-
-const mostrarMensaje = (mensaje) => {
-  let mensajeDiv = document.getElementById("mensaje-resultado");
-  if (!mensajeDiv) {
-    mensajeDiv = document.createElement("div");
-    mensajeDiv.id = "mensaje-resultado";
-    mensajeDiv.classList.add("title");
-    mensajeDiv.style.fontWeight = "bold";
-    mensajeDiv.style.fontSize = "2em";
-    mensajeDiv.style.textAlign = "center";
-    mensajeDiv.style.color = "white";
-    document.body.appendChild(mensajeDiv);
-  }
-  mensajeDiv.textContent = mensaje;
-};
 
 const determinarGanador = () => {
   const [puntosMinimos, puntosComputadora] = puntosJugadores;
@@ -58,7 +31,7 @@ const turnoComputadora = (puntosMinimos) => {
   do {
     const carta = pedirCarta(deck);
     sumarPuntos(puntosJugadores.length - 1, carta);
-    insertarCarta(carta, puntosJugadores.length - 1);
+    insertarCarta(carta, puntosJugadores.length - 1, divCartasJugadores);
 
     if (puntosMinimos > 21) {
       break;
@@ -66,19 +39,6 @@ const turnoComputadora = (puntosMinimos) => {
   } while (puntosJugadores[puntosJugadores.length - 1] < puntosMinimos && puntosMinimos <= 21);
 
   determinarGanador();
-};
-
-const insertarCarta = (carta, turno) => {
-  if (!divCartasJugadores[turno]) {
-    console.error(`No existe el contenedor de cartas para el turno ${turno}`);
-    mostrarMensaje(`Error: Falta el contenedor de cartas para el jugador ${turno + 1}`);
-    return;
-  }
-  const imgCarta = document.createElement("img");
-  imgCarta.src = `/public/assets/cartas/${carta}.png`;
-  imgCarta.alt = `Carta ${carta}`;
-  imgCarta.classList.add("carta");
-  divCartasJugadores[turno].append(imgCarta);
 };
 
 const sumarPuntos = (turno, carta) => {
@@ -110,7 +70,7 @@ iniciarJuego();
 btnPedir.addEventListener("click", () => {
   const carta = pedirCarta(deck);
   sumarPuntos(0, carta);
-  insertarCarta(carta, 0);
+  insertarCarta(carta, 0, divCartasJugadores);
 
   if (puntosJugadores[0] > 21) {
     btnPedir.disabled = true;

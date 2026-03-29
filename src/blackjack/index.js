@@ -1,92 +1,83 @@
-import { crearDeck, pedirCarta, valorCarta, mostrarMensaje, insertarCarta } from "./usecases";
+import { crearDeck, mostrarMensaje } from "./usecases";
+import { sumarPuntos, determinarGanador, turnoComputadora } from "./game-logic";
 
-const tipos = ["C", "D", "H", "S"],
-  especiales = ["A", "J", "Q", "K"];
-let deck = [],
-  puntosJugadores = [];
+// Game constants
+const tipos = ["C", "D", "H", "S"];
+const especiales = ["A", "J", "Q", "K"];
 
-// HTML
-const btnPedir = document.querySelector("#pedir-cartas");
-const btnDetener = document.querySelector("#detener");
-const btnNuevo = document.querySelector("#nuevo-juego");
-const puntajesJugadorHTML = document.querySelectorAll("small");
-const divCartasJugadores = document.querySelectorAll(".div-cartas");
-
-const determinarGanador = () => {
-  const [puntosMinimos, puntosComputadora] = puntosJugadores;
-  setTimeout(() => {
-    if (puntosComputadora === puntosMinimos) {
-      mostrarMensaje("Nadie gana :(");
-    } else if (puntosMinimos > 21) {
-      mostrarMensaje("Computadora gana");
-    } else if (puntosComputadora > 21) {
-      mostrarMensaje("Jugador gana");
-    } else {
-      mostrarMensaje("Computadora gana");
-    }
-  }, 100);
+// Game state
+const gameState = {
+  deck: [],
+  puntosJugadores: [],
 };
 
-const turnoComputadora = (puntosMinimos) => {
-  do {
-    const carta = pedirCarta(deck);
-    sumarPuntos(puntosJugadores.length - 1, carta);
-    insertarCarta(carta, puntosJugadores.length - 1, divCartasJugadores);
-
-    if (puntosMinimos > 21) {
-      break;
-    }
-  } while (puntosJugadores[puntosJugadores.length - 1] < puntosMinimos && puntosMinimos <= 21);
-
-  determinarGanador();
+// DOM elements
+const dom = {
+  btnPedir: document.querySelector("#pedir-cartas"),
+  btnDetener: document.querySelector("#detener"),
+  btnNuevo: document.querySelector("#nuevo-juego"),
+  puntajesJugadorHTML: document.querySelectorAll("small"),
+  divCartasJugadores: document.querySelectorAll(".div-cartas"),
 };
 
-const sumarPuntos = (turno, carta) => {
-  puntosJugadores[turno] = puntosJugadores[turno] + valorCarta(carta);
-  if (!puntajesJugadorHTML[turno]) {
-    console.error(`No existe el marcador para el turno ${turno}`);
-    mostrarMensaje(`Error: Falta el marcador para el jugador ${turno + 1}`);
-    return puntosJugadores[turno];
-  }
-  puntajesJugadorHTML[turno].textContent = puntosJugadores[turno];
-  return puntosJugadores[turno];
-};
-
-const iniciarJuego = (numeroJugadores = 1) => {
-  deck = crearDeck(tipos, especiales);
-  // Limpiar marcadores y cartas de todos los jugadores
-  puntajesJugadorHTML.forEach((elem) => (elem.textContent = 0));
-  divCartasJugadores.forEach((elem) => (elem.innerHTML = ""));
-  // Limpiar mensaje
+/**
+ * Inicializa el juego, baraja y limpia el estado y la UI.
+ * @param {number} numeroJugadores
+ */
+function iniciarJuego(numeroJugadores = 1) {
+  gameState.deck = crearDeck(tipos, especiales);
+  dom.puntajesJugadorHTML.forEach((elem) => (elem.textContent = 0));
+  dom.divCartasJugadores.forEach((elem) => (elem.innerHTML = ""));
   mostrarMensaje("");
-  btnPedir.disabled = false;
-  btnDetener.disabled = false;
-  puntosJugadores = new Array(numeroJugadores + 1).fill(0);
-};
+  dom.btnPedir.disabled = false;
+  dom.btnDetener.disabled = false;
+  gameState.puntosJugadores = new Array(numeroJugadores + 1).fill(0);
+}
 
+/**
+ * Configura los listeners de los botones principales.
+ */
+function setupEventListeners() {
+  dom.btnPedir.addEventListener("click", () => {
+    const carta = gameState.deck.length ? gameState.deck.pop() : null;
+    if (!carta) return;
+    sumarPuntos(0, carta, gameState.puntosJugadores, dom.puntajesJugadorHTML);
+    // Reutiliza insertarCarta desde usecases
+    import("./usecases").then(({ insertarCarta }) => {
+      insertarCarta(carta, 0, dom.divCartasJugadores);
+    });
+    if (gameState.puntosJugadores[0] > 21) {
+      dom.btnPedir.disabled = true;
+      dom.btnDetener.disabled = true;
+      turnoComputadora(
+        gameState.puntosJugadores[0],
+        gameState.puntosJugadores,
+        gameState.deck,
+        dom.divCartasJugadores,
+        dom.puntajesJugadorHTML,
+      );
+    } else if (gameState.puntosJugadores[0] === 21) {
+      dom.btnPedir.disabled = true;
+    }
+  });
+
+  dom.btnDetener.addEventListener("click", () => {
+    dom.btnPedir.disabled = true;
+    dom.btnDetener.disabled = true;
+    turnoComputadora(
+      gameState.puntosJugadores[0],
+      gameState.puntosJugadores,
+      gameState.deck,
+      dom.divCartasJugadores,
+      dom.puntajesJugadorHTML,
+    );
+  });
+
+  dom.btnNuevo.addEventListener("click", () => {
+    iniciarJuego();
+  });
+}
+
+// Inicialización
 iniciarJuego();
-
-// Events
-btnPedir.addEventListener("click", () => {
-  const carta = pedirCarta(deck);
-  sumarPuntos(0, carta);
-  insertarCarta(carta, 0, divCartasJugadores);
-
-  if (puntosJugadores[0] > 21) {
-    btnPedir.disabled = true;
-    btnDetener.disabled = true;
-    turnoComputadora(puntosJugadores[0]);
-  } else if (puntosJugadores[0] === 21) {
-    btnPedir.disabled = true;
-  }
-});
-
-btnDetener.addEventListener("click", () => {
-  btnPedir.disabled = true;
-  btnDetener.disabled = true;
-  turnoComputadora(puntosJugadores[0]);
-});
-
-btnNuevo.addEventListener("click", () => {
-  iniciarJuego();
-});
+setupEventListeners();

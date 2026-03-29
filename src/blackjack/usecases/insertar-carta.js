@@ -13,7 +13,7 @@ export const insertarCarta = (carta, turno, divCartasJugadores) => {
     return;
   }
   const imgCarta = document.createElement("img");
-  imgCarta.src = `/public/assets/cartas/${carta}.png`;
+  imgCarta.src = `assets/cartas/${carta}.png`;
   imgCarta.alt = `Carta ${carta}`;
   imgCarta.classList.add("carta");
   divCartasJugadores[turno].append(imgCarta);
